@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Send, Loader2, Brain, Search } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Send, Loader2, Brain, Search, ChevronDown } from "lucide-react"
 import { ragQuery } from "@/lib/rag-actions"
-import { ModelSelector } from "./model-selector"
+import ReactMarkdown from "react-markdown"
 
 interface Source {
   id: string
@@ -35,7 +36,20 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [selectedModel, setSelectedModel] = useState("deepseek-r1-distill-llama-70b")
+  const [selectedModel, setSelectedModel] = useState("llama-3.1-8b-instant")
+
+  const suggestedPrompts = [
+    "What are the health benefits of Mediterranean cuisine?",
+    "Tell me about fermented foods and their nutritional value",
+    "What spices are commonly used in Indian cooking?",
+    "How do I prepare authentic Italian pasta?",
+    "What are some protein-rich vegetarian foods?",
+  ]
+
+  const models = [
+    { id: "llama-3.1-8b-instant", name: "Llama 3.1 8B", description: "Fast and efficient" },
+    { id: "mixtral-8x7b-32768", name: "Mixtral 8x7B", description: "Balanced performance" },
+  ]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -77,11 +91,31 @@ export function ChatInterface() {
     }
   }
 
+  const handleSuggestedPrompt = (prompt: string) => {
+    setInput(prompt)
+  }
+
   return (
     <div className="space-y-6">
-      <ModelSelector selectedModel={selectedModel} onModelChange={setSelectedModel} />
+      <div className="space-y-3">
+        <h3 className="text-sm font-medium text-gray-700">Try asking about:</h3>
+        <div className="flex flex-wrap gap-2">
+          {suggestedPrompts.map((prompt, index) => (
+            <Button
+              key={index}
+              variant="outline"
+              size="sm"
+              onClick={() => handleSuggestedPrompt(prompt)}
+              className="text-xs hover:bg-orange-50 hover:border-orange-200"
+              disabled={isLoading}
+            >
+              {prompt}
+            </Button>
+          ))}
+        </div>
+      </div>
 
-      <div className="space-y-4 min-h-[400px]">
+      <div className="space-y-4 min-h-[600px] max-h-[600px] overflow-y-auto bg-gray-50 rounded-lg p-4">
         {messages.length === 0 && (
           <div className="text-center py-12">
             <div className="bg-gradient-to-r from-orange-100 to-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
@@ -144,7 +178,9 @@ export function ChatInterface() {
                       <h4 className="font-semibold text-gray-900">AI Response</h4>
                     </div>
                     <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-3">
-                      <p className="text-gray-800">{message.content}</p>
+                      <ReactMarkdown className="text-gray-800 prose prose-sm max-w-none">
+                        {message.content}
+                      </ReactMarkdown>
                     </div>
                   </div>
                 </div>
@@ -168,22 +204,44 @@ export function ChatInterface() {
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="flex space-x-2">
-        <Input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about any food, ingredient, or cuisine..."
-          disabled={isLoading}
-          className="flex-1"
-        />
-        <Button
-          type="submit"
-          disabled={isLoading || !input.trim()}
-          className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
-        >
-          <Send className="h-4 w-4" />
-        </Button>
-      </form>
+      <div className="space-y-3">
+        <form onSubmit={handleSubmit} className="flex space-x-2">
+          <div className="flex-1 relative">
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask about any food, ingredient, or cuisine..."
+              disabled={isLoading}
+              className="pr-32"
+            />
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+              <Select value={selectedModel} onValueChange={setSelectedModel}>
+                <SelectTrigger className="w-28 h-8 text-xs border-0 bg-transparent">
+                  <SelectValue />
+                  <ChevronDown className="h-3 w-3" />
+                </SelectTrigger>
+                <SelectContent>
+                  {models.map((model) => (
+                    <SelectItem key={model.id} value={model.id}>
+                      <div>
+                        <div className="font-medium text-xs">{model.name}</div>
+                        <div className="text-xs text-gray-500">{model.description}</div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <Button
+            type="submit"
+            disabled={isLoading || !input.trim()}
+            className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </form>
+      </div>
     </div>
   )
 }
